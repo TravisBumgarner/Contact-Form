@@ -2,50 +2,32 @@
 
 # Load environment variables from .env file
 if [ -f .env ]; then
-    export $(cat .env | grep -v '#' | xargs)
+    export $(cat .env.nfs | grep -v '#' | xargs)
 else
-    echo "Error: .env file not found"
+    echo "Error: .env.nfs file not found"
     exit 1
 fi
 
 # Define variables
-REMOTE_DIR="/home/contact-form"
-REPO_URL="your-repository-url-here"
-TEMP_DIR="/tmp/contact-form-build"
-BRANCH="main"
+REMOTE_DIR="/home/protected/"
 
 # Execute remote commands
 echo "Starting remote deployment..."
+
+# Upload .env file and build directory
+echo "Uploading files..."
+scp .env $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$REMOTE_DIR/.env
+scp -r build/ $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$REMOTE_DIR/
+scp package.json $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$REMOTE_DIR/
+scp run.sh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$REMOTE_DIR/
+
 ssh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "
-    # Clean up any existing temp directory
-    echo 'Cleaning up any existing temp directory...'
-    rm -rf $TEMP_DIR
-
-    # Clone the repository
-    echo 'Cloning repository...'
-    git clone $REPO_URL $TEMP_DIR
-
-    # Change to the project directory
-    cd $TEMP_DIR
-    git checkout $BRANCH
-
-    # Install dependencies and build
-    echo 'Installing dependencies...'
-    npm install
-
-    echo 'Building application...'
-    npm run build
-
-    # Move files to deployment directory
-    echo 'Moving files to deployment directory...'
-    rm -rf $REMOTE_DIR/*
-    rm -rf $REMOTE_DIR/.* 2>/dev/null
-
-    mv dist run.sh package.json package-lock.json .env $REMOTE_DIR/
-
-    # Install production dependencies in deployment directory
     cd $REMOTE_DIR
+    
+    # Install dependencies
     npm install --production
+    
+    # Make sure run script is executable
     chmod +x run.sh
 
     # Clean up

@@ -27,6 +27,13 @@ const prettyPrintSubmission = (submission: Submission) => {
   `;
 };
 
+app.get('/ok', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'OK'
+  });
+});
+
 app.post('/contact', async (req, res) => {
   try {
     const { email, name, message, website } = req.body;
